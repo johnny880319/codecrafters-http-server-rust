@@ -1,7 +1,5 @@
-use std::{
-    io::Write as _,
-    net::TcpListener,
-};
+use std::net::TcpListener;
+mod repl;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
@@ -10,11 +8,7 @@ fn main() {
         match stream {
             Ok(mut stream) => {
                 println!("accepted new connection");
-                // let mut buf = [0; 512];
-                // stream.read_exact(&mut buf).unwrap();
-                stream
-                    .write_all("HTTP/1.1 200 OK\r\n\r\n".as_bytes())
-                    .unwrap();
+                repl::repl(&mut stream);
             }
             Err(e) => {
                 println!("error: {}", e);
