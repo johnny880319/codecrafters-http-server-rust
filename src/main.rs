@@ -1,4 +1,4 @@
-use std::net::TcpListener;
+use std::{net::TcpListener, thread};
 mod repl;
 
 fn main() {
@@ -8,7 +8,9 @@ fn main() {
         match stream {
             Ok(mut stream) => {
                 println!("accepted new connection");
-                let _ = repl::repl(&mut stream);
+                thread::spawn(move || {
+                    let _ = repl::repl(&mut stream);
+                });
             }
             Err(e) => {
                 println!("error: {}", e);
