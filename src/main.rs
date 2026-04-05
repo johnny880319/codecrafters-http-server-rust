@@ -1,5 +1,5 @@
 use std::{
-    io::{Read as _, Write as _},
+    io::Write as _,
     net::TcpListener,
 };
 
@@ -10,8 +10,8 @@ fn main() {
         match stream {
             Ok(mut stream) => {
                 println!("accepted new connection");
-                let mut buf = [0; 512];
-                stream.read_exact(&mut buf).unwrap();
+                // let mut buf = [0; 512];
+                // stream.read_exact(&mut buf).unwrap();
                 stream
                     .write_all("HTTP/1.1 200 OK\r\n\r\n".as_bytes())
                     .unwrap();
