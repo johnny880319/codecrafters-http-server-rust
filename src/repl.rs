@@ -31,6 +31,16 @@ pub fn repl(stream: &mut TcpStream) -> Result<()> {
 
         if request_target == "/" {
             stream.write_all("HTTP/1.1 200 OK\r\n\r\n".as_bytes())?;
+        } else if request_target.starts_with("/echo/") {
+            if let Some(echo_content) = request_target.strip_prefix("/echo/") {
+                let mut response = String::new();
+                response.push_str("HTTP/1.1 200 OK\r\n");
+                response.push_str("Content-Type: text/plain\r\n");
+                response.push_str(&format!("Content-Length: {}\r\n", echo_content.len()));
+                response.push_str("\r\n");
+                response.push_str(echo_content);
+                stream.write_all(response.as_bytes())?;
+            }
         } else {
             stream.write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())?;
         }
