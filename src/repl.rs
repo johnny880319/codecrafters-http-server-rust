@@ -4,7 +4,7 @@ use std::{
     net::TcpStream,
 };
 
-pub fn repl(stream: &mut TcpStream) -> Result<()> {
+pub fn repl(stream: &mut TcpStream, dir_path: String) -> Result<()> {
     println!("accepted new connection");
     loop {
         let mut buf = [0; 4096];
@@ -56,6 +56,26 @@ pub fn repl(stream: &mut TcpStream) -> Result<()> {
             response.push_str(&format!("Content-Length: {}\r\n", echo_content.len()));
             response.push_str("\r\n");
             response.push_str(&echo_content);
+            stream.write_all(response.as_bytes())?;
+        } else if request_target.starts_with("/file/") {
+            let mut file_bytes = Vec::new();
+            if let Some(file_path) = request_target.strip_prefix("/file/") {
+                let full_path = format!("{}/{}", dir_path, file_path);
+                match std::fs::read(&full_path) {
+                    Ok(bytes) => file_bytes = bytes,
+                    Err(_) => {
+                        stream.write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())?;
+                        return Ok(());
+                    }
+                }
+            }
+
+            let mut response = String::new();
+            response.push_str("HTTP/1.1 200 OK\r\n");
+            response.push_str("Content-Type: application/octet-stream\r\n");
+            response.push_str(&format!("Content-Length: {}\r\n", file_bytes.len()));
+            response.push_str("\r\n");
+            response.push_str(&String::from_utf8_lossy(&file_bytes));
             stream.write_all(response.as_bytes())?;
         } else {
             stream.write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())?;
