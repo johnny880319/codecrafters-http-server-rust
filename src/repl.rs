@@ -57,7 +57,7 @@ pub fn repl(stream: &mut TcpStream, dir_path: String) -> Result<()> {
             response.push_str("\r\n");
             response.push_str(&echo_content);
             stream.write_all(response.as_bytes())?;
-        } else if request_target.starts_with("/file/") {
+        } else if request_target.starts_with("/files/") {
             let mut file_bytes = Vec::new();
             if let Some(file_path) = request_target.strip_prefix("/file/") {
                 let full_path = format!("{}/{}", dir_path, file_path);
