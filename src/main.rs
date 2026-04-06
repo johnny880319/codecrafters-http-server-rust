@@ -1,6 +1,7 @@
 use std::{env, net::TcpListener, thread};
 mod command;
 mod repl;
+mod template;
 
 fn main() {
     // parse the --directory argument
