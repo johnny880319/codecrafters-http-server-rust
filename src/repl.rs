@@ -59,7 +59,7 @@ pub fn repl(stream: &mut TcpStream, dir_path: String) -> Result<()> {
             stream.write_all(response.as_bytes())?;
         } else if request_target.starts_with("/files/") {
             let mut file_bytes = Vec::new();
-            if let Some(file_path) = request_target.strip_prefix("/file/") {
+            if let Some(file_path) = request_target.strip_prefix("/files/") {
                 let full_path = format!("{}/{}", dir_path, file_path);
                 println!("serving file: {}", full_path);
                 match std::fs::read(&full_path) {
