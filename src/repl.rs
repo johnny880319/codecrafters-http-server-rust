@@ -24,11 +24,16 @@ pub fn repl(stream: &mut TcpStream, dir_path: String) -> Result<()> {
         }
 
         let request_line = request_contents[0];
+        let request_method = request_line
+            .split(" ")
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing request method"))?;
         let request_target = request_line
             .split(" ")
             .nth(1)
             .ok_or_else(|| anyhow::anyhow!("missing request target"))?;
         let request_headers = &request_contents[1..request_contents.len() - 2];
+        let request_body = request_contents.last().unwrap_or(&"");
 
         if request_target == "/" {
             stream.write_all("HTTP/1.1 200 OK\r\n\r\n".as_bytes())?;
@@ -57,7 +62,7 @@ pub fn repl(stream: &mut TcpStream, dir_path: String) -> Result<()> {
             response.push_str("\r\n");
             response.push_str(&echo_content);
             stream.write_all(response.as_bytes())?;
-        } else if request_target.starts_with("/files/") {
+        } else if request_method == "GET" && request_target.starts_with("/files/") {
             let mut file_bytes = Vec::new();
             if let Some(file_path) = request_target.strip_prefix("/files/") {
                 let full_path = format!("{}/{}", dir_path, file_path);
@@ -77,6 +82,15 @@ pub fn repl(stream: &mut TcpStream, dir_path: String) -> Result<()> {
             response.push_str(&format!("Content-Length: {}\r\n", file_bytes.len()));
             response.push_str("\r\n");
             response.push_str(&String::from_utf8_lossy(&file_bytes));
+            stream.write_all(response.as_bytes())?;
+        } else if request_method == "POST" && request_target.starts_with("/files/") {
+            if let Some(file_path) = request_target.strip_prefix("/files/") {
+                let full_path = format!("{}/{}", dir_path, file_path);
+                println!("serving file: {}", full_path);
+                std::fs::write(&full_path, request_body)?;
+            }
+
+            let response = "HTTP/1.1 201 Created\r\n\r\n".to_string();
             stream.write_all(response.as_bytes())?;
         } else {
             stream.write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())?;
