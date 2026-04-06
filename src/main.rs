@@ -1,4 +1,5 @@
 use std::{env, net::TcpListener, thread};
+mod command;
 mod repl;
 
 fn main() {
