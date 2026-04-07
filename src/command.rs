@@ -51,7 +51,10 @@ pub fn execute_command(
     }
     if connection_closed {
         response.headers.push("Connection: close\r\n".to_string());
-    };
+    }
+    response
+        .headers
+        .push(template::content_length(response.body.len()));
 
     send_response(stream, response)?;
 
@@ -111,11 +114,10 @@ fn get_cmd() -> Result<HttpResponse> {
 
 fn get_echo(parsed_request: ParsedRequest) -> Result<HttpResponse> {
     let status_line = template::STATUS_200.to_string();
-    let mut headers = vec![template::CONTENT_TYPE_PLAIN.to_string()];
+    let headers = vec![template::CONTENT_TYPE_PLAIN.to_string()];
     let body;
 
     if let Some(echo_content) = parsed_request.target.strip_prefix("/echo/") {
-        headers.push(template::content_length(echo_content.len()));
         body = echo_content.as_bytes().to_vec();
 
         return Ok(HttpResponse {
@@ -129,7 +131,7 @@ fn get_echo(parsed_request: ParsedRequest) -> Result<HttpResponse> {
 
 fn get_user_agent(parsed_request: ParsedRequest) -> Result<HttpResponse> {
     let status_line = template::STATUS_200.to_string();
-    let mut headers = vec![template::CONTENT_TYPE_PLAIN.to_string()];
+    let headers = vec![template::CONTENT_TYPE_PLAIN.to_string()];
 
     let mut user_agent = String::new();
     for header in parsed_request.headers {
@@ -138,8 +140,7 @@ fn get_user_agent(parsed_request: ParsedRequest) -> Result<HttpResponse> {
             break;
         }
     }
-    headers.push(template::content_length(user_agent.len()));
-    let body = user_agent.as_bytes().to_vec();
+    let body = user_agent.into_bytes();
 
     Ok(HttpResponse {
         status_line,
@@ -150,7 +151,7 @@ fn get_user_agent(parsed_request: ParsedRequest) -> Result<HttpResponse> {
 
 fn get_files(parsed_request: ParsedRequest, dir_path: String) -> Result<HttpResponse> {
     let status_line = template::STATUS_200.to_string();
-    let mut headers = vec![template::CONTENT_TYPE_OCTET_STREAM.to_string()];
+    let headers = vec![template::CONTENT_TYPE_OCTET_STREAM.to_string()];
 
     let mut file_bytes = Vec::new();
     if let Some(file_path) = parsed_request.target.strip_prefix("/files/") {
@@ -164,7 +165,6 @@ fn get_files(parsed_request: ParsedRequest, dir_path: String) -> Result<HttpResp
         }
     }
 
-    headers.push(template::content_length(file_bytes.len()));
     let body = file_bytes;
 
     Ok(HttpResponse {
