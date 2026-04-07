@@ -20,7 +20,7 @@ fn main() {
                 println!("accepted new connection");
                 let dir_path = dir_path.clone();
                 thread::spawn(move || {
-                    let _ = repl::repl(&mut stream, dir_path);
+                    let _ = repl::handle_connection(&mut stream, dir_path);
                 });
             }
             Err(e) => {
