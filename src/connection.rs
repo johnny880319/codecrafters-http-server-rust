@@ -1,6 +1,9 @@
 use crate::command;
 use anyhow::Result;
-use std::{io::Read as _, net::Shutdown::Both, net::TcpStream};
+use std::{
+    io::Read as _,
+    net::{Shutdown::Both, TcpStream},
+};
 
 pub fn handle_connection(stream: &mut TcpStream, dir_path: String) -> Result<()> {
     println!("accepted new connection");

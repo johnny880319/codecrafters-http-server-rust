@@ -1,5 +1,4 @@
-use crate::repl::ParsedRequest;
-use crate::template;
+use crate::{connection::ParsedRequest, template};
 use anyhow::Result;
 use flate2::{Compression, write::GzEncoder};
 use std::{io::Write as _, net::TcpStream};

@@ -1,6 +1,6 @@
 use std::{env, net::TcpListener, thread};
 mod command;
-mod repl;
+mod connection;
 mod template;
 
 fn main() {
@@ -20,7 +20,7 @@ fn main() {
                 println!("accepted new connection");
                 let dir_path = dir_path.clone();
                 thread::spawn(move || {
-                    let _ = repl::handle_connection(&mut stream, dir_path);
+                    let _ = connection::handle_connection(&mut stream, dir_path);
                 });
             }
             Err(e) => {
