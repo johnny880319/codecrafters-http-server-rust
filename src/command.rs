@@ -46,11 +46,13 @@ pub fn execute_command(
     if accepts_gzip {
         response
             .headers
-            .push("Content-Encoding: gzip\r\n".to_string());
+            .push(template::CONTENT_ENCODING_GZIP.to_string());
         response.body = gzip_compress(&response.body);
     }
     if connection_closed {
-        response.headers.push("Connection: close\r\n".to_string());
+        response
+            .headers
+            .push(template::CONNECTION_CLOSE.to_string());
     }
     response
         .headers
