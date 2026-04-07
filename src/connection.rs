@@ -1,8 +1,11 @@
 use crate::command;
 use anyhow::Result;
-use std::{io::Read as _, net::Shutdown::Both, net::TcpStream};
+use std::{
+    io::Read as _,
+    net::{Shutdown::Both, TcpStream},
+};
 
-pub fn repl(stream: &mut TcpStream, dir_path: String) -> Result<()> {
+pub fn handle_connection(stream: &mut TcpStream, dir_path: String) -> Result<()> {
     println!("accepted new connection");
     loop {
         let mut buf = [0; 4096];
@@ -10,7 +13,7 @@ pub fn repl(stream: &mut TcpStream, dir_path: String) -> Result<()> {
 
         let parsed_request = parse_request(&buf, n)?;
 
-        let connection_closed = command::execute_command(parsed_request, stream, dir_path.clone())?;
+        let connection_closed = command::handle_request(parsed_request, stream, dir_path.as_str())?;
         if connection_closed {
             println!("connection closed by client");
             stream.shutdown(Both)?;
@@ -25,6 +28,28 @@ pub struct ParsedRequest {
     pub target: String,
     pub headers: Vec<String>,
     pub body: String,
+}
+
+impl ParsedRequest {
+    pub fn accepts_gzip(&self) -> bool {
+        for header in &self.headers {
+            if let Some(accept_encoding) = header.strip_prefix("Accept-Encoding: ")
+                && accept_encoding.split(", ").any(|e| e == "gzip")
+            {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn is_connection_close(&self) -> bool {
+        for header in &self.headers {
+            if header == "Connection: close" {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 fn parse_request(buf: &[u8], n: usize) -> Result<ParsedRequest> {
