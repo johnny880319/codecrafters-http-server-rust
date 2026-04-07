@@ -21,12 +21,12 @@ pub fn handle_request(
         parsed_request.method.as_str(),
         parsed_request.target.as_str(),
     ) {
-        ("GET", "/") => get_root()?,
-        ("GET", "/user-agent") => get_user_agent(parsed_request)?,
-        ("GET", target) if target.starts_with("/echo/") => get_echo(parsed_request)?,
-        ("GET", target) if target.starts_with("/files/") => get_files(parsed_request, dir_path)?,
-        ("POST", target) if target.starts_with("/files/") => post_files(parsed_request, dir_path)?,
-        _ => not_found()?,
+        ("GET", "/") => get_root(),
+        ("GET", "/user-agent") => get_user_agent(parsed_request),
+        ("GET", target) if target.starts_with("/echo/") => get_echo(&parsed_request),
+        ("GET", target) if target.starts_with("/files/") => get_files(&parsed_request, dir_path),
+        ("POST", target) if target.starts_with("/files/") => post_files(&parsed_request, dir_path)?,
+        _ => not_found(),
     };
 
     if accepts_gzip {
@@ -68,19 +68,19 @@ fn send_response(stream: &mut TcpStream, response: HttpResponse) -> Result<()> {
     Ok(())
 }
 
-fn get_root() -> Result<HttpResponse> {
+fn get_root() -> HttpResponse {
     let status_line = template::STATUS_200.to_string();
     let headers = Vec::new();
     let body = Vec::new();
 
-    Ok(HttpResponse {
+    HttpResponse {
         status_line,
         headers,
         body,
-    })
+    }
 }
 
-fn get_user_agent(parsed_request: ParsedRequest) -> Result<HttpResponse> {
+fn get_user_agent(parsed_request: ParsedRequest) -> HttpResponse {
     let status_line = template::STATUS_200.to_string();
     let headers = vec![template::CONTENT_TYPE_PLAIN.to_string()];
 
@@ -93,35 +93,35 @@ fn get_user_agent(parsed_request: ParsedRequest) -> Result<HttpResponse> {
     }
     let body = user_agent.into_bytes();
 
-    Ok(HttpResponse {
+    HttpResponse {
         status_line,
         headers,
         body,
-    })
+    }
 }
 
-fn get_echo(parsed_request: ParsedRequest) -> Result<HttpResponse> {
+fn get_echo(parsed_request: &ParsedRequest) -> HttpResponse {
     let status_line = template::STATUS_200.to_string();
     let headers = vec![template::CONTENT_TYPE_PLAIN.to_string()];
 
     let echo_content = parsed_request.target.strip_prefix("/echo/").unwrap_or("");
     let body = echo_content.as_bytes().to_vec();
 
-    Ok(HttpResponse {
+    HttpResponse {
         status_line,
         headers,
         body,
-    })
+    }
 }
 
-fn get_files(parsed_request: ParsedRequest, dir_path: &str) -> Result<HttpResponse> {
+fn get_files(parsed_request: &ParsedRequest, dir_path: &str) -> HttpResponse {
     let status_line = template::STATUS_200.to_string();
     let headers = vec![template::CONTENT_TYPE_OCTET_STREAM.to_string()];
 
     let mut file_bytes = Vec::new();
     if let Some(file_path) = parsed_request.target.strip_prefix("/files/") {
-        let full_path = format!("{}/{}", dir_path, file_path);
-        println!("serving file: {}", full_path);
+        let full_path = format!("{dir_path}/{file_path}");
+        println!("serving file: {full_path}");
         match std::fs::read(&full_path) {
             Ok(bytes) => file_bytes = bytes,
             Err(_) => {
@@ -130,21 +130,21 @@ fn get_files(parsed_request: ParsedRequest, dir_path: &str) -> Result<HttpRespon
         }
     }
 
-    Ok(HttpResponse {
+    HttpResponse {
         status_line,
         headers,
         body: file_bytes,
-    })
+    }
 }
 
-fn post_files(parsed_request: ParsedRequest, dir_path: &str) -> Result<HttpResponse> {
+fn post_files(parsed_request: &ParsedRequest, dir_path: &str) -> Result<HttpResponse> {
     let status_line = template::STATUS_201.to_string();
     let headers = Vec::new();
     let body = Vec::new();
 
     if let Some(file_path) = parsed_request.target.strip_prefix("/files/") {
-        let full_path = format!("{}/{}", dir_path, file_path);
-        println!("serving file: {}", full_path);
+        let full_path = format!("{dir_path}/{file_path}");
+        println!("serving file: {full_path}");
         std::fs::write(&full_path, &parsed_request.body)?;
     }
 
@@ -155,14 +155,14 @@ fn post_files(parsed_request: ParsedRequest, dir_path: &str) -> Result<HttpRespo
     })
 }
 
-fn not_found() -> Result<HttpResponse> {
+fn not_found() -> HttpResponse {
     let status_line = template::STATUS_404.to_string();
     let headers = Vec::new();
     let body = Vec::new();
 
-    Ok(HttpResponse {
+    HttpResponse {
         status_line,
         headers,
         body,
-    })
+    }
 }

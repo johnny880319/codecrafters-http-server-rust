@@ -10,7 +10,7 @@ pub const CONTENT_ENCODING_GZIP: &str = "Content-Encoding: gzip\r\n";
 pub const CONNECTION_CLOSE: &str = "Connection: close\r\n";
 
 pub fn content_length(length: usize) -> String {
-    format!("Content-Length: {}\r\n", length)
+    format!("Content-Length: {length}\r\n")
 }
 
 pub const HEADER_END: &str = "\r\n";
