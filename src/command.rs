@@ -7,7 +7,7 @@ use std::{io::Write as _, net::TcpStream};
 struct HttpResponse {
     status_line: String,
     headers: Vec<String>,
-    body: String,
+    body: Vec<u8>,
 }
 
 pub fn execute_command(
@@ -78,30 +78,29 @@ fn check_connection_closed(request: &ParsedRequest) -> bool {
     false
 }
 
-fn gzip_compress(input: &str) -> String {
+fn gzip_compress(input: &[u8]) -> Vec<u8> {
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-    encoder
-        .write_all(input.as_bytes())
-        .expect("gzip compression failed");
-    String::from_utf8_lossy(&encoder.finish().expect("gzip compression failed")).to_string()
+    encoder.write_all(input).expect("gzip compression failed");
+    encoder.finish().expect("gzip compression failed")
 }
 
 fn send_response(stream: &mut TcpStream, response: HttpResponse) -> Result<()> {
-    let mut response_str = response.status_line;
+    let mut response_bytes = Vec::new();
+    response_bytes.extend_from_slice(response.status_line.as_bytes());
     for header in response.headers {
-        response_str.push_str(&header);
+        response_bytes.extend_from_slice(header.as_bytes());
     }
-    response_str.push_str(template::HEADER_END);
-    response_str.push_str(&response.body);
+    response_bytes.extend_from_slice(template::HEADER_END.as_bytes());
+    response_bytes.extend_from_slice(&response.body);
 
-    stream.write_all(response_str.as_bytes())?;
+    stream.write_all(&response_bytes)?;
     Ok(())
 }
 
 fn get_cmd() -> Result<HttpResponse> {
     let status_line = template::STATUS_200.to_string();
     let headers: Vec<String> = vec![];
-    let body = "".to_string();
+    let body = "".as_bytes().to_vec();
 
     Ok(HttpResponse {
         status_line,
@@ -117,7 +116,7 @@ fn get_echo(parsed_request: ParsedRequest) -> Result<HttpResponse> {
 
     if let Some(echo_content) = parsed_request.target.strip_prefix("/echo/") {
         headers.push(template::content_length(echo_content.len()));
-        body = echo_content.to_string();
+        body = echo_content.as_bytes().to_vec();
 
         return Ok(HttpResponse {
             status_line,
@@ -140,7 +139,7 @@ fn get_user_agent(parsed_request: ParsedRequest) -> Result<HttpResponse> {
         }
     }
     headers.push(template::content_length(user_agent.len()));
-    let body = user_agent;
+    let body = user_agent.as_bytes().to_vec();
 
     Ok(HttpResponse {
         status_line,
@@ -166,7 +165,7 @@ fn get_files(parsed_request: ParsedRequest, dir_path: String) -> Result<HttpResp
     }
 
     headers.push(template::content_length(file_bytes.len()));
-    let body = String::from_utf8_lossy(&file_bytes).to_string();
+    let body = file_bytes;
 
     Ok(HttpResponse {
         status_line,
@@ -178,12 +177,12 @@ fn get_files(parsed_request: ParsedRequest, dir_path: String) -> Result<HttpResp
 fn post_files(parsed_request: ParsedRequest, dir_path: String) -> Result<HttpResponse> {
     let status_line = template::STATUS_201.to_string();
     let headers: Vec<String> = vec![];
-    let body = "".to_string();
+    let body = "".as_bytes().to_vec();
 
     if let Some(file_path) = parsed_request.target.strip_prefix("/files/") {
         let full_path = format!("{}/{}", dir_path, file_path);
         println!("serving file: {}", full_path);
-        std::fs::write(&full_path, parsed_request.body)?;
+        std::fs::write(&full_path, &parsed_request.body)?;
     }
 
     Ok(HttpResponse {
@@ -196,7 +195,7 @@ fn post_files(parsed_request: ParsedRequest, dir_path: String) -> Result<HttpRes
 fn not_found() -> Result<HttpResponse> {
     let status_line = template::STATUS_404.to_string();
     let headers: Vec<String> = vec![];
-    let body = "".to_string();
+    let body = "".as_bytes().to_vec();
 
     Ok(HttpResponse {
         status_line,
