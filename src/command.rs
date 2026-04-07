@@ -1,6 +1,7 @@
 use crate::repl::ParsedRequest;
 use crate::template;
 use anyhow::{Result, bail};
+use flate2::{Compression, write::GzEncoder};
 use std::{io::Write as _, net::TcpStream};
 
 struct HttpResponse {
@@ -46,6 +47,7 @@ pub fn execute_command(
         response
             .headers
             .push("Content-Encoding: gzip\r\n".to_string());
+        response.body = gzip_compress(&response.body);
     }
     if connection_closed {
         response.headers.push("Connection: close\r\n".to_string());
@@ -74,6 +76,14 @@ fn check_connection_closed(request: &ParsedRequest) -> bool {
         }
     }
     false
+}
+
+fn gzip_compress(input: &str) -> String {
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+    encoder
+        .write_all(input.as_bytes())
+        .expect("gzip compression failed");
+    String::from_utf8_lossy(&encoder.finish().expect("gzip compression failed")).to_string()
 }
 
 fn send_response(stream: &mut TcpStream, response: HttpResponse) -> Result<()> {
