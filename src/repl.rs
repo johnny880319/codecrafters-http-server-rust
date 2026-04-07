@@ -1,20 +1,21 @@
 use crate::command;
 use anyhow::Result;
-use std::{io::Read as _, net::TcpStream};
+use std::{io::Read as _, net::Shutdown::Both, net::TcpStream};
 
 pub fn repl(stream: &mut TcpStream, dir_path: String) -> Result<()> {
     println!("accepted new connection");
     loop {
         let mut buf = [0; 4096];
         let n = stream.read(&mut buf)?;
-        if n == 0 {
-            println!("connection closed");
-            break;
-        }
 
         let parsed_request = parse_request(&buf, n)?;
 
-        command::execute_command(parsed_request, stream, dir_path.clone())?;
+        let connection_closed = command::execute_command(parsed_request, stream, dir_path.clone())?;
+        if connection_closed {
+            println!("connection closed by client");
+            stream.shutdown(Both)?;
+            break;
+        }
     }
     Ok(())
 }
