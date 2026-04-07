@@ -9,17 +9,18 @@ struct HttpResponse {
     body: Vec<u8>,
 }
 
-pub fn execute_command(
+pub fn handle_request(
     parsed_request: ParsedRequest,
     stream: &mut TcpStream,
     dir_path: &str,
 ) -> Result<bool> {
-    let request_method = parsed_request.method.clone();
-    let request_target = parsed_request.target.clone();
     let accepts_gzip = parsed_request.accepts_gzip();
-    let connection_closed = parsed_request.check_connection_closed();
+    let connection_closed = parsed_request.is_connection_close();
 
-    let mut response = match (request_method.as_str(), request_target.as_str()) {
+    let mut response = match (
+        parsed_request.method.as_str(),
+        parsed_request.target.as_str(),
+    ) {
         ("GET", "/") => get_root()?,
         ("GET", "/user-agent") => get_user_agent(parsed_request)?,
         ("GET", target) if target.starts_with("/echo/") => get_echo(parsed_request)?,

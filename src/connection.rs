@@ -13,8 +13,7 @@ pub fn handle_connection(stream: &mut TcpStream, dir_path: String) -> Result<()>
 
         let parsed_request = parse_request(&buf, n)?;
 
-        let connection_closed =
-            command::execute_command(parsed_request, stream, dir_path.as_str())?;
+        let connection_closed = command::handle_request(parsed_request, stream, dir_path.as_str())?;
         if connection_closed {
             println!("connection closed by client");
             stream.shutdown(Both)?;
@@ -43,7 +42,7 @@ impl ParsedRequest {
         false
     }
 
-    pub fn check_connection_closed(&self) -> bool {
+    pub fn is_connection_close(&self) -> bool {
         for header in &self.headers {
             if header == "Connection: close" {
                 return true;
