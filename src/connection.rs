@@ -6,6 +6,7 @@ use std::{
     net::{Shutdown::Both, TcpStream},
 };
 
+// dir_path is owned because it's moved into a new thread in main.rs
 #[allow(clippy::needless_pass_by_value)]
 pub fn handle_connection(stream: &mut TcpStream, dir_path: String) -> Result<()> {
     println!("accepted new connection");
