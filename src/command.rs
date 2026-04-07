@@ -16,9 +16,11 @@ pub fn execute_command(
 ) -> Result<bool> {
     let request_method = parsed_request.method.as_str();
     let request_target = parsed_request.target.as_str();
+    let accepts_gzip = check_is_gzip(&parsed_request);
     let connection_closed = check_connection_closed(&parsed_request);
 
     let mut response;
+
     match (request_method, request_target) {
         ("GET", "/") => {
             response = get_cmd()?;
@@ -40,6 +42,11 @@ pub fn execute_command(
         }
     }
 
+    if accepts_gzip {
+        response
+            .headers
+            .push("Content-Encoding: gzip\r\n".to_string());
+    }
     if connection_closed {
         response.headers.push("Connection: close\r\n".to_string());
     };
@@ -47,6 +54,17 @@ pub fn execute_command(
     send_response(stream, response)?;
 
     Ok(connection_closed)
+}
+
+fn check_is_gzip(parsed_request: &ParsedRequest) -> bool {
+    for header in &parsed_request.headers {
+        if let Some(accept_encoding) = header.strip_prefix("Accept-Encoding: ")
+            && accept_encoding.split(", ").any(|e| e == "gzip")
+        {
+            return true;
+        }
+    }
+    false
 }
 
 fn check_connection_closed(request: &ParsedRequest) -> bool {
