@@ -37,25 +37,25 @@ fn parse_request(buf: &[u8], n: usize) -> Result<ParsedRequest> {
     }
 
     let request_line = request_contents[0];
-    let request_method = request_line
+    let method = request_line
         .split(" ")
         .next()
         .ok_or_else(|| anyhow::anyhow!("missing request method"))?
         .to_string();
-    let request_target = request_line
+    let target = request_line
         .split(" ")
         .nth(1)
         .ok_or_else(|| anyhow::anyhow!("missing request target"))?
         .to_string();
-    let request_headers: Vec<String> = request_contents[1..request_contents.len() - 2]
+    let headers: Vec<String> = request_contents[1..request_contents.len() - 2]
         .iter()
         .map(|s| s.to_string())
         .collect();
-    let request_body = request_contents.last().unwrap_or(&"").to_string();
+    let body = request_contents.last().unwrap_or(&"").to_string();
     Ok(ParsedRequest {
-        method: request_method.to_string(),
-        target: request_target.to_string(),
-        headers: request_headers,
-        body: request_body.to_string(),
+        method,
+        target,
+        headers,
+        body,
     })
 }

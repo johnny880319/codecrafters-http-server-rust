@@ -103,7 +103,6 @@ fn get_echo(parsed_request: ParsedRequest) -> Result<HttpResponse> {
 fn get_user_agent(parsed_request: ParsedRequest) -> Result<HttpResponse> {
     let status_line = template::STATUS_200.to_string();
     let mut headers = vec![template::CONTENT_TYPE_PLAIN.to_string()];
-    
 
     let mut user_agent = String::new();
     for header in parsed_request.headers {
@@ -113,7 +112,7 @@ fn get_user_agent(parsed_request: ParsedRequest) -> Result<HttpResponse> {
         }
     }
     headers.push(template::content_length(user_agent.len()));
-    let body = user_agent.clone();
+    let body = user_agent;
 
     Ok(HttpResponse {
         status_line,
@@ -125,7 +124,6 @@ fn get_user_agent(parsed_request: ParsedRequest) -> Result<HttpResponse> {
 fn get_files(parsed_request: ParsedRequest, dir_path: String) -> Result<HttpResponse> {
     let status_line = template::STATUS_200.to_string();
     let mut headers = vec![template::CONTENT_TYPE_OCTET_STREAM.to_string()];
-    
 
     let mut file_bytes = Vec::new();
     if let Some(file_path) = parsed_request.target.strip_prefix("/files/") {
